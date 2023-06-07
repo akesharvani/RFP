@@ -1,0 +1,75 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link rel="stylesheet" href="{% static 'css/index.css' %}">
+</head>
+<body>
+    <div class="outer_container">
+        <div class="container">
+            <div class="card" style="--clr: #0096FF">
+                <div class="box">
+                    <div class="icon">
+                        <div class="iconbox">
+                            <ion-icon name="brush-outline"></ion-icon>
+                        </div>
+                    </div>
+                    <div class="content">
+                        <h3>Daily Herald</h3>
+                        <p>
+                            Press below button to scrape this website : https://marketplace.dailyherald.com
+                        </p>
+                        <a href="scrape?website=1">Scrape</a>
+                    </div>
+                </div>
+            </div>
+    
+            <div class="card" style="--clr: #7DF9FF">
+                <div class="box">
+                    <div class="icon">
+                        <div class="iconbox">
+                            <ion-icon name="code-slash-outline"></ion-icon>
+                        </div>
+                    </div>
+                    <div class="content">
+                        <h3>Cook County</h3>
+                        <p>
+                            Press below button to scrape this website : https://cookcountyil.bonfirehub.com
+                        </p>
+                        {% comment %} href="scrape?website=2"  {% endcomment %}
+                        <a href="#">Scrape</a>
+                    </div>
+                </div>
+            </div>
+    
+            <div class="card" style="--clr: #90EE90">
+                <div class="box">
+                    <div class="icon">
+                        <div class="iconbox">
+                            <ion-icon name="rocket-outline"></ion-icon>
+                        </div>
+                    </div>
+                    <div class="content">
+                        <h3>City Colleges</h3>
+                        <p>
+                            Press below button to scrape this website : <br> https://apps.ccc.edu
+                        </p>
+                        <div>
+                            <a id="" href="scrape?website=3">Scrape</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="adaptive_cards">
+        <a href="sendAdaptiveCards">Send Adaptive Cards</a>
+    </div>
+        <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+        <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+</body>
+</html>
