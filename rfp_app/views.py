@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 import os
 from dotenv import load_dotenv
 load_dotenv()
+import xmlrpc.client
 import requests
 
 # Create your views here.
@@ -256,6 +257,170 @@ def send_adaptive_cards(request):
     # here now we have to send these cards to the ms teams
     return redirect('home')
 
+def send_adaptive_cards_odoo(request):
+    odoo_url = os.getenv("ODOO_URL")
+    odoo_db = os.getenv("ODOO_DB")
+    odoo_username = os.getenv("ODOO_USERNAME")
+    odoo_password = os.getenv("ODOO_PASSWORD")
+    odoo_common = xmlrpc.client.ServerProxy('{}/xmlrpc/2/common'.format(odoo_url))
+    odoo_uid = odoo_common.authenticate(odoo_db, odoo_username, odoo_password, {})
+    odoo_models = xmlrpc.client.ServerProxy('{}/xmlrpc/2/object'.format(odoo_url))
 
+    lead_id = request.GET['lead_id']
+    unsent_rfp = []
+    for x in lead_id:
+
+        data = odoo_models.execute_kw(odoo_db, odoo_uid, odoo_password, 'product.template', 'read', [[x]], {'fields': ['create_date','date_deadline','type','display_name','description','partner_name','email_from','title']}) 
+        posted_date = data[0]['create_date']
+        due_date = data[0]['date_deadline']
+        rfx_bid_number = data[0][''] # Nothing found
+        rfx_type = data[0]['type']
+        title = data[0]['display_name']
+        description = data[0]['description']
+        buyer_agent_name = data[0]['partner_name']
+        buyer_agent_email = data[0]['email_from']
+        buyer_agent_title = data[0]['title'][1]
+
+        temp_jso = {
+                'posted_date' : posted_date,
+                'due_date' : due_date,
+                'rfx_bid_number' :rfx_bid_number,
+                'rfx_type':rfx_type,
+                'title':title,
+                'description':description,
+                'buyer_agent_name':buyer_agent_name,
+                'buyer_agent_email':buyer_agent_email,
+                'buyer_agent_title':buyer_agent_title
+
+        }
+        unsent_rfp.append(temp_jso)
+        
+    # Now send adaptive card
+    for x in unsent_rfp:
+        adaptive_card = """ 
+        {
+            "type": "message",
+            "attachments": [
+                {
+                    "contentType": "application/vnd.microsoft.card.adaptive",
+                    "contentUrl": null,
+                    "content":{
+                        "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+                        "type": "AdaptiveCard",
+                        "version": "1.4",
+                        "body": [
+                            {
+                                "type": "Container",
+                                "items": [
+                                    {
+                                        "type": "TextBlock",
+                                        "text": \""""+str(x['title'])+"""\",
+                                        "weight": "Bolder",
+                                        "size": "Medium"
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "Container",
+                                "items": [
+                                    {
+                                        "type": "TextBlock",
+                                        "text": \""""+str(x['description'])+"""\",
+                                        "wrap": true
+                                    },
+                                    {
+                                        "type": "FactSet",
+                                        "facts": [
+                                            {
+                                                "title": "Posting Entity:",
+                                                "value": \""""+str(x['buyer_agent_name'])+"""\"
+                                            },
+                                            {
+                                                "title": "Due Date:",
+                                                "value": \""""+str(x['due_date'])+"""\"
+                                            },
+                                            {
+                                                "title": "Bid type:",
+                                                "value":  \""""+str(x['rfx_type'])+"""\"
+                                            },
+                                            {
+                                                "title": "Created date:",
+                                                "value": \""""+str(x['posted_date'])+"""\"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ],
+                        "actions": [
+                            {
+                                "type": "Action.ShowCard",
+                                "title": "Schedule Bidders Conference",
+                                "card": {
+                                    "type": "AdaptiveCard",
+                                    "body": [
+                                        {
+                                            "type": "Input.Text",
+                                            "id": "comment",
+                                            "isMultiline": true,
+                                            "placeholder": "Enter your comment"
+                                        }
+                                    ],
+                                    "actions": [
+                                        {
+                                            "type": "Action.Submit",
+                                            "title": "Schedule Bidders Conference",
+                                            "data": {
+                                                "action": "scheduleConference"
+                                            }
+                                        },
+                                        {
+                                            "type": "Action.Submit",
+                                            "title": "Ask More Questions"
+                                        }
+                    
+                                    ]
+                                }
+                            },
+                            {
+                                "type": "Action.OpenUrl",
+                                "title": "Open in web browser",
+                                "url": "https://adaptivecards.io"
+                            },
+                            {
+                                "type": "Action.OpenUrl",
+                                "title": "Not Interested",
+                                "url": "https://adaptivecards.io"
+                            }
+                        ]
+                    }
+                }
+            ]
+        }
+
+        """
+
+        webhookUrl = os.environ.get('MS_TEAMS_WEBHOOK')
+        client = requests.Session()
+
+        client.headers['Accept'] = 'application/json'
+        headers = {
+            'Content-Type': 'application/json'
+        }
+        payload = adaptive_card.encode('utf-8')
+
+        # Send the POST request
+        response = client.post(webhookUrl, data=payload, headers=headers)
+    
+        # Check the response status
+        if response.status_code == 200:
+            print("Card sent successfully")
+            x.sent_to_ms_teams = True
+            x.save()
+        else:
+            print("Failed to send the card. Status code:", response.status_code)
+            print(response.text)
+    
+    return True
 
 

@@ -6,4 +6,5 @@ urlpatterns = [
     path('scrape', views.scrape, name='scrape'),
     path('home', views.index, name='home'),
     path('sendAdaptiveCards', views.send_adaptive_cards, name='sendAdaptiveCards'),
+    path('sendAdaptiveCardFromOdoo',views.send_adaptive_cards_odoo,name="send_adaptive_cards_odoo")
 ]
